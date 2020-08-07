@@ -1,9 +1,15 @@
 package faridnet.com.faridcollector.Data.ContagensData
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.PrimaryKey
+import androidx.room.TypeConverter
 import faridnet.com.faridcollector.Data.ProdutosData.Produtos
+import java.time.OffsetDateTime
+import java.time.format.DateTimeFormatter
+import java.util.*
 
 @Entity(
     tableName = "contagem_table"
@@ -14,11 +20,10 @@ import faridnet.com.faridcollector.Data.ProdutosData.Produtos
 //    ]
 )
 
-data class Contagens (
+data class Contagens(
 
     @PrimaryKey(autoGenerate = true)
-    val contagemId: Int,
     val produtoId: Int,
-    val quantidade: String
-    //val dataHora: Date
+    val quantidade: String,
+    val dataHora: String
 )

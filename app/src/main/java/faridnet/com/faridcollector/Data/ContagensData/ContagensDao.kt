@@ -17,7 +17,7 @@ interface ContagensDao {
     suspend fun deleteAllContagens()
 
 
-    @Query("SELECT * FROM contagem_table ORDER BY contagemId ASC")
+    @Query("SELECT * FROM contagem_table ORDER BY produtoId ASC")
     fun readAllData(): LiveData<List<Contagens>>
 
 
