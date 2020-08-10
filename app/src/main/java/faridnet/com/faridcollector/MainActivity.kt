@@ -1,5 +1,6 @@
 package faridnet.com.faridcollector
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -65,11 +66,14 @@ class MainActivity : AppCompatActivity() {
         add_btn4.setOnClickListener {
             //openFile(PICK_PDF_FILE)
             openDocumentPicker()
+
         }
+
+
 
     }
 
-    fun save() {
+    fun saveNewFileOnAppFolder() {
         val text: String = mEditTextCodBarras?.getText().toString()
         var fos: FileOutputStream? = null
         try {
@@ -117,8 +121,6 @@ class MainActivity : AppCompatActivity() {
 
             Toast.makeText(this, "Adicionado com sucesso", Toast.LENGTH_LONG).show()
 
-
-
         }else{
             Toast.makeText(this, "Preencha os campos, por gentileza", Toast.LENGTH_LONG).show()
 
@@ -150,41 +152,34 @@ class MainActivity : AppCompatActivity() {
 
     private fun openDocumentPicker() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            /**
-             * It's possible to limit the types of files by mime-type. Since this
-             * app displays pages from a PDF file, we'll specify `application/pdf`
-             * in `type`.
-             * See [Intent.setType] for more details.
-             */
-            type = "app/txt"
-
-            /**
-             * Because we'll want to use [ContentResolver.openFileDescriptor] to read
-             * the data of whatever file is picked, we set [Intent.CATEGORY_OPENABLE]
-             * to ensure this will succeed.
-             */
+            type = "text/plain"
             addCategory(Intent.CATEGORY_OPENABLE)
         }
         startActivityForResult(intent, OPEN_DOCUMENT_REQUEST_CODE)
     }
 
-    private fun createFile(pickerInitialUri: Uri) {
-        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "app/txt"
-            putExtra(Intent.EXTRA_TITLE, "app.txt")
+    fun openDirectory(pickerInitialUri: Uri) {
+        // Choose a directory using the system's file picker.
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
+            // Provide read access to files and sub-directories in the user-selected
+            // directory.
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
 
             // Optionally, specify a URI for the directory that should be opened in
-            // the system file picker before your app creates the document.
+            // the system file picker when it loads.
             putExtra(DocumentsContract.EXTRA_INITIAL_URI, pickerInitialUri)
         }
-        startActivityForResult(intent, Companion.CREATE_FILE)
+
+        startActivityForResult(intent, OPEN_DOCUMENT_REQUEST_CODE)
     }
 
+
     fun openFile(pickerInitialUri: Uri) {
+        //Allow the user to choose the file to open by invoking the ACTION_OPEN_DOCUMENT intent
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
             addCategory(Intent.CATEGORY_OPENABLE)
-            type = "application/txt"
+            // To show only the types of files that your app supports, specify a MIME type
+            type = "text/plain"
 
             // Optionally, specify a URI for the file that should appear in the
             // system file picker when it loads.
@@ -193,9 +188,45 @@ class MainActivity : AppCompatActivity() {
 
         startActivityForResult(intent, Companion.PICK_TXT_FILE)
     }
+
+
+    override fun onActivityResult(
+        requestCode: Int, resultCode: Int, resultData: Intent?) {
+        super.onActivityResult(requestCode, resultCode, resultData)
+
+        if (requestCode == OPEN_DOCUMENT_REQUEST_CODE
+            && resultCode == Activity.RESULT_OK) {
+            // The result data contains a URI for the document or directory that
+            // the user selected.
+            resultData?.data?.also { uri ->
+                // Perform operations on the document using its URI.
+
+                val contentResolver = applicationContext.contentResolver
+
+                fun alterDocument(uri: Uri) {
+                    try {
+                        contentResolver.openFileDescriptor(uri, "w")?.use {
+                            FileOutputStream(it.fileDescriptor).use {
+                                it.write(
+                                    ("Overwritten at ${System.currentTimeMillis()}\n")
+                                        .toByteArray()
+                                )
+                                Toast.makeText(applicationContext, "passou", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    } catch (e: FileNotFoundException) {
+                        e.printStackTrace()
+                    } catch (e: IOException) {
+                        e.printStackTrace()
+                    }
+                }
+
+            }
+        }
+    }
 }
 
 private const val OPEN_DOCUMENT_REQUEST_CODE = 0x33
-private const val TAG = "MainActivity"
-private const val LAST_OPENED_URI_KEY =
-    "com.example.android.actionopendocument.pref.LAST_OPENED_URI_KEY"
+//private const val TAG = "MainActivity"
+//private const val LAST_OPENED_URI_KEY =
+//    "com.example.android.actionopendocument.pref.LAST_OPENED_URI_KEY"
