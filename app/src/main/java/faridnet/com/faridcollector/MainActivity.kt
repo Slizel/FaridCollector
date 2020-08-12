@@ -1,11 +1,12 @@
 package faridnet.com.faridcollector
 
 import android.app.Activity
+import android.app.PendingIntent.getActivity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.provider.DocumentsContract
+import android.os.ParcelFileDescriptor
 import android.text.TextUtils
 import android.widget.EditText
 import android.widget.Toast
@@ -65,14 +66,75 @@ class MainActivity : AppCompatActivity() {
 
         add_btn4.setOnClickListener {
             //openFile(PICK_PDF_FILE)
-            openDocumentPicker()
+            //openDocumentPicker()
+            editDocument()
 
         }
 
-
-
     }
 
+//    private fun openDocumentPicker() {
+//        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+//            type = "text/plain"
+//            addCategory(Intent.CATEGORY_OPENABLE)
+//        }
+//        startActivityForResult(intent, OPEN_DOCUMENT_REQUEST_CODE)
+//    }
+
+
+    private fun editDocument() {
+
+        // ACTION_OPEN_DOCUMENT is the intent to choose a file via the system's
+        // file browser.
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT)
+
+        // Filter to only show results that can be "opened", such as a
+        // file (as opposed to a list of contacts or timezones).
+        intent.addCategory(Intent.CATEGORY_OPENABLE)
+
+        // Filter to show only text files.
+        intent.type = "text/plain"
+        startActivityForResult(intent, EDIT_REQUEST_CODE)
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, resultData: Intent?) {
+        super.onActivityResult(requestCode, resultCode, resultData)
+
+        if (requestCode == EDIT_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+
+            var uri: Uri? = null
+            if (resultData != null) {
+                uri = resultData.data
+
+
+                if (uri != null) {
+                    alterDocument(uri)
+                }
+            }
+        }
+    }
+
+    fun alterDocument(uri: Uri) {
+
+        try {
+            contentResolver.openFileDescriptor(uri, "w")?.use {
+                FileOutputStream(it.fileDescriptor).use {
+                    it.write(
+
+                        ("Overwritten at ${System.currentTimeMillis()}\n")
+                            .toByteArray()
+                    )
+
+                }
+            }
+        } catch (e: FileNotFoundException) {
+            e.printStackTrace()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
+
+    //Criar novo arquivo na pasta
     fun saveNewFileOnAppFolder() {
         val text: String = mEditTextCodBarras?.getText().toString()
         var fos: FileOutputStream? = null
@@ -99,6 +161,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+
     // Database
     private fun insertDataToDatabase() {
         val codBarras = codBarrasEditText.text.toString()
@@ -108,12 +171,12 @@ class MainActivity : AppCompatActivity() {
         val sdf = SimpleDateFormat("dd/M/yyyy hh:mm:ss")
         val currentDate = sdf.format(Date())
 
-        if (inputCheck(codBarras, qtde, descricao)){
+        if (inputCheck(codBarras, qtde, descricao)) {
             //Create Product Object
             val contagem = Contagens(0, qtde, currentDate)
 
             //Precisa criar váriavel que pega o código do produto
-            val produto = Produtos(codBarras,0 , descricao)
+            val produto = Produtos(codBarras, 0, descricao)
 
             // Add Data to Database
             cAppViewModel.addContagens(contagem)
@@ -121,112 +184,40 @@ class MainActivity : AppCompatActivity() {
 
             Toast.makeText(this, "Adicionado com sucesso", Toast.LENGTH_LONG).show()
 
-        }else{
+        } else {
             Toast.makeText(this, "Preencha os campos, por gentileza", Toast.LENGTH_LONG).show()
 
         }
     }
 
-    private fun inputCheck(codBarras: String, qtde: String, descricao: String): Boolean{
-        return !(TextUtils.isEmpty(codBarras) && TextUtils.isEmpty(qtde) && TextUtils.isEmpty(descricao))
+    private fun inputCheck(codBarras: String, qtde: String, descricao: String): Boolean {
+        return !(TextUtils.isEmpty(codBarras) && TextUtils.isEmpty(qtde) && TextUtils.isEmpty(
+            descricao
+        ))
     }
 
-    private  fun clearDatabase(){
+    private fun clearDatabase() {
         //Alert Dialog
         val builder = AlertDialog.Builder(this)
-        builder.setPositiveButton("Sim"){ _, _ ->
+        builder.setPositiveButton("Sim") { _, _ ->
             cAppViewModel.deleteAllContagens()
             pAppViewModel.deleteAllProdutos()
 
 
-            Toast.makeText(this,
-                    "Banco foi limpo",
-                    Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                "Banco foi limpo",
+                Toast.LENGTH_SHORT
+            ).show()
 
         }
-        builder.setNegativeButton("Não"){ _, _ -> }
+        builder.setNegativeButton("Não") { _, _ -> }
         builder.setTitle("Limpar Banco de Dados")
         builder.setMessage("Tem certeza que deseja limpar o BD?")
         builder.create().show()
     }
 
-    private fun openDocumentPicker() {
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            type = "text/plain"
-            addCategory(Intent.CATEGORY_OPENABLE)
-        }
-        startActivityForResult(intent, OPEN_DOCUMENT_REQUEST_CODE)
-    }
-
-    fun openDirectory(pickerInitialUri: Uri) {
-        // Choose a directory using the system's file picker.
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE).apply {
-            // Provide read access to files and sub-directories in the user-selected
-            // directory.
-            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
-
-            // Optionally, specify a URI for the directory that should be opened in
-            // the system file picker when it loads.
-            putExtra(DocumentsContract.EXTRA_INITIAL_URI, pickerInitialUri)
-        }
-
-        startActivityForResult(intent, OPEN_DOCUMENT_REQUEST_CODE)
-    }
-
-
-    fun openFile(pickerInitialUri: Uri) {
-        //Allow the user to choose the file to open by invoking the ACTION_OPEN_DOCUMENT intent
-        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            // To show only the types of files that your app supports, specify a MIME type
-            type = "text/plain"
-
-            // Optionally, specify a URI for the file that should appear in the
-            // system file picker when it loads.
-            putExtra(DocumentsContract.EXTRA_INITIAL_URI, pickerInitialUri)
-        }
-
-        startActivityForResult(intent, Companion.PICK_TXT_FILE)
-    }
-
-
-    override fun onActivityResult(
-        requestCode: Int, resultCode: Int, resultData: Intent?) {
-        super.onActivityResult(requestCode, resultCode, resultData)
-
-        if (requestCode == OPEN_DOCUMENT_REQUEST_CODE
-            && resultCode == Activity.RESULT_OK) {
-            // The result data contains a URI for the document or directory that
-            // the user selected.
-            resultData?.data?.also { uri ->
-                // Perform operations on the document using its URI.
-
-                val contentResolver = applicationContext.contentResolver
-
-                fun alterDocument(uri: Uri) {
-                    try {
-                        contentResolver.openFileDescriptor(uri, "w")?.use {
-                            FileOutputStream(it.fileDescriptor).use {
-                                it.write(
-                                    ("Overwritten at ${System.currentTimeMillis()}\n")
-                                        .toByteArray()
-                                )
-                                Toast.makeText(applicationContext, "passou", Toast.LENGTH_SHORT).show()
-                            }
-                        }
-                    } catch (e: FileNotFoundException) {
-                        e.printStackTrace()
-                    } catch (e: IOException) {
-                        e.printStackTrace()
-                    }
-                }
-
-            }
-        }
-    }
 }
 
 private const val OPEN_DOCUMENT_REQUEST_CODE = 0x33
-//private const val TAG = "MainActivity"
-//private const val LAST_OPENED_URI_KEY =
-//    "com.example.android.actionopendocument.pref.LAST_OPENED_URI_KEY"
+private const val EDIT_REQUEST_CODE = 44
