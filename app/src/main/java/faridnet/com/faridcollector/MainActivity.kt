@@ -1,12 +1,10 @@
 package faridnet.com.faridcollector
 
 import android.app.Activity
-import android.app.PendingIntent.getActivity
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
-import android.os.ParcelFileDescriptor
 import android.text.TextUtils
 import android.widget.EditText
 import android.widget.Toast
@@ -17,9 +15,7 @@ import faridnet.com.faridcollector.Data.ContagensData.Contagens
 import faridnet.com.faridcollector.Data.ProdutosData.Produtos
 import faridnet.com.faridcollector.Data.ViewModel.AppViewModel
 import kotlinx.android.synthetic.main.activity_main.*
-import java.io.FileNotFoundException
-import java.io.FileOutputStream
-import java.io.IOException
+import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -114,16 +110,36 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    fun alterDocument(uri: Uri) {
+     fun alterDocument(uri: Uri) {
 
         try {
-            contentResolver.openFileDescriptor(uri, "w")?.use {
+            contentResolver.openFileDescriptor(uri, "w")?.use { it ->
                 FileOutputStream(it.fileDescriptor).use {
-                    it.write(
 
-                        ("Overwritten at ${System.currentTimeMillis()}\n")
-                            .toByteArray()
+                    it.write(
+                        (       "000000000000000" +
+                                "100151023" +
+                                "ARROZ NEGRO LA PASTIN \n"
+
+                                //"${System.currentTimeMillis()}\n"
+                                ).toByteArray()
                     )
+
+                    it.write(
+                        (       "000000000000000" +
+                                "500143226" +
+                                "JG.PANELAS TRAMONT.7P \n"
+
+                                //"${System.currentTimeMillis()}\n"
+
+                                ).toByteArray()
+                    )
+
+//                    val file = File(uri.path)
+//                    val line: List<String> = file.readLines()
+//                    line.forEach { line ->
+//
+//                    }
 
                 }
             }
