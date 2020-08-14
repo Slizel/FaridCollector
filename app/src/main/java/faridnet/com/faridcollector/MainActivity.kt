@@ -10,14 +10,17 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.observe
+import com.github.doyaaaaaken.kotlincsv.dsl.csvWriter
 import faridnet.com.faridcollector.Data.ContagensData.Contagens
 import faridnet.com.faridcollector.Data.ProdutosData.Produtos
-import faridnet.com.faridcollector.Data.ViewModel.AppViewModel
 import kotlinx.android.synthetic.main.activity_main.*
 import java.io.*
 import java.text.SimpleDateFormat
 import java.util.*
+import faridnet.com.faridcollector.Data.ViewModel.AppViewModel as AppViewModel
 
 
 private lateinit var cAppViewModel: AppViewModel
@@ -28,12 +31,18 @@ class MainActivity : AppCompatActivity() {
     companion object {
         val FILE_NAME = "Contagem.txt"
 
+        private var CONTAGEM_SHOWN = true
+
         // Request code for creating a PDF document.
         const val CREATE_FILE = 1
 
         // Request code for selecting a PDF document.
         const val PICK_TXT_FILE = 2
     }
+
+
+    private lateinit var appViewModel: AppViewModel
+    private lateinit var contagensList: List<Contagens>
 
     var mEditTextCodBarras: EditText? = null
     var mEditTextQtde: EditText? = null
@@ -60,11 +69,15 @@ class MainActivity : AppCompatActivity() {
             clearDatabase()
         }
 
+        add_btn3.setOnClickListener {
+            exportDatabaseToCSVFile()
+
+        }
+
         add_btn4.setOnClickListener {
             //openFile(PICK_PDF_FILE)
             //openDocumentPicker()
             editDocument()
-
         }
 
     }
@@ -78,6 +91,7 @@ class MainActivity : AppCompatActivity() {
 //    }
 
 
+    // Import buttom functions ----------------------------------------------------------
     private fun editDocument() {
 
         // ACTION_OPEN_DOCUMENT is the intent to choose a file via the system's
@@ -110,14 +124,14 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-     fun alterDocument(uri: Uri) {
+    fun alterDocument(uri: Uri) {
 
         try {
             contentResolver.openFileDescriptor(uri, "w")?.use { it ->
                 FileOutputStream(it.fileDescriptor).use {
 
                     it.write(
-                        (       "000000000000000" +
+                        ("000000000000000" +
                                 "100151023" +
                                 "ARROZ NEGRO LA PASTIN \n"
 
@@ -126,7 +140,7 @@ class MainActivity : AppCompatActivity() {
                     )
 
                     it.write(
-                        (       "000000000000000" +
+                        ("000000000000000" +
                                 "500143226" +
                                 "JG.PANELAS TRAMONT.7P \n"
 
@@ -150,7 +164,52 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    //Criar novo arquivo na pasta
+    // Export to CSV ---------------------------------------------------------------------
+
+    private fun getCSVFileName(): String = "Contagens.csv"
+
+    private fun exportDatabaseToCSVFile() {
+        val csvFile = generateFile(this, getCSVFileName())
+        if (csvFile != null) {
+
+            if (CONTAGEM_SHOWN) {
+                exportMoviesWithContentToCSVFile(csvFile)
+            }
+
+            Toast.makeText(this, "CSV Gerado!!!", Toast.LENGTH_LONG).show()
+            val intent = goToFileIntent(this, csvFile)
+            startActivity(intent)
+        } else {
+            Toast.makeText(this, "Algo deu errado! Tente novamente", Toast.LENGTH_LONG).show()
+        }
+    }
+
+//    private fun initData() {
+//        appViewModel = ViewModelProvider(this).get(AppViewModel::class.java)
+//        appViewModel.Cont_readAllData.observe(this,
+//            Observer { contagens: Observable? ->
+//                contagensList = contagens
+//
+//            }
+//
+//        )
+//    }
+
+    fun exportMoviesWithContentToCSVFile(csvFile: File) {
+        csvWriter().open(csvFile, append = false) {
+            // Header
+            writeRow(listOf("[id]", "[${Contagens.TABLE_NAME}]", "[${Produtos.TABLE_NAME}]"))
+            contagensList.forEachIndexed { index, contagens ->
+                val directorName: String =
+                    appViewModel.Cont_readAllData.value?.find { it.contagemId == contagens.produtoId }?.quantidade
+                        ?: ""
+                writeRow(listOf(index, contagens.quantidade, directorName))
+            }
+        }
+    }
+
+
+    //Criar novo arquivo na pasta --------------------------------------------------------
     fun saveNewFileOnAppFolder() {
         val text: String = mEditTextCodBarras?.getText().toString()
         var fos: FileOutputStream? = null
@@ -178,7 +237,8 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    // Database
+    // Database --------------------------------------------------------------------------
+
     private fun insertDataToDatabase() {
         val codBarras = codBarrasEditText.text.toString()
         val qtde = contagemEditText.text.toString()
@@ -189,7 +249,7 @@ class MainActivity : AppCompatActivity() {
 
         if (inputCheck(codBarras, qtde, descricao)) {
             //Create Product Object
-            val contagem = Contagens(0, qtde, currentDate)
+            val contagem = Contagens(0, qtde.toInt(), qtde, currentDate)
 
             //Precisa criar váriavel que pega o código do produto
             val produto = Produtos(codBarras, 0, descricao)
@@ -235,5 +295,7 @@ class MainActivity : AppCompatActivity() {
 
 }
 
+
 private const val OPEN_DOCUMENT_REQUEST_CODE = 0x33
 private const val EDIT_REQUEST_CODE = 44
+

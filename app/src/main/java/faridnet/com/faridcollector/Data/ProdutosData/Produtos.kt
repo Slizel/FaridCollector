@@ -10,4 +10,11 @@ data class Produtos(
     val produtoId: Int,
     val descricao: String
 
-)
+){
+    companion object {
+        const val TABLE_NAME = "Produtos"
+        const val TITLE = "title"
+        const val PRODUTO_ID = "produtoId"
+    }
+
+}

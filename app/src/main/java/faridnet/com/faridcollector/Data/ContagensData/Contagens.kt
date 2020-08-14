@@ -23,7 +23,16 @@ import java.util.*
 data class Contagens(
 
     @PrimaryKey(autoGenerate = true)
+    val contagemId: Int,
     val produtoId: Int,
     val quantidade: String,
     val dataHora: String
-)
+) {
+
+    companion object {
+        const val TABLE_NAME = "Contagens"
+        const val TITLE = "title"
+        const val DIRECTOR_ID = "directorId"
+    }
+
+}
