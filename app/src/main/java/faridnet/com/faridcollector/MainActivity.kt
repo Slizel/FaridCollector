@@ -10,8 +10,11 @@ import android.widget.EditText
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModelProvider
+import androidx.room.Room
 import faridnet.com.faridcollector.Data.ContagensData.Contagens
+import faridnet.com.faridcollector.Data.Database.AppDatabase
 import faridnet.com.faridcollector.Data.ProdutosData.Produtos
 import faridnet.com.faridcollector.Data.ViewModel.AppViewModel
 import kotlinx.android.synthetic.main.activity_main.*
@@ -22,6 +25,8 @@ import java.util.*
 
 private lateinit var cAppViewModel: AppViewModel
 private lateinit var pAppViewModel: AppViewModel
+private var db: AppDatabase? = null
+
 
 class MainActivity : AppCompatActivity() {
 
@@ -51,6 +56,8 @@ class MainActivity : AppCompatActivity() {
         cAppViewModel = ViewModelProvider(this).get(AppViewModel::class.java)
 
 
+
+
         add_btn.setOnClickListener {
             insertDataToDatabase()
             //save()
@@ -58,6 +65,10 @@ class MainActivity : AppCompatActivity() {
 
         add_btn2.setOnClickListener {
             clearDatabase()
+        }
+
+        add_btn3.setOnClickListener {
+            export()
         }
 
         add_btn4.setOnClickListener {
@@ -69,15 +80,43 @@ class MainActivity : AppCompatActivity() {
 
     }
 
-//    private fun openDocumentPicker() {
-//        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
-//            type = "text/plain"
-//            addCategory(Intent.CATEGORY_OPENABLE)
-//        }
-//        startActivityForResult(intent, OPEN_DOCUMENT_REQUEST_CODE)
-//    }
+
+    fun export() {
+
+        //generate data
+        val data = StringBuilder()
+        data.append("Produto ID, Codigo de Barras, Data")
+        for (i in 0..4) {
+            data.append("""$i,${i * i}""".trimIndent())
+        }
+        try {
+            //saving the file into device
+            val out: FileOutputStream = openFileOutput("data.csv", Context.MODE_PRIVATE)
+            out.write(data.toString().toByteArray())
+            out.close()
+
+            //exporting
+            val context: Context = applicationContext
+            val filelocation = File(filesDir, "data.csv")
+            val path: Uri = FileProvider.getUriForFile(
+                context,
+                "faridnet.com.faridcollector",
+                filelocation
+            )
+            val fileIntent = Intent(Intent.ACTION_SEND)
+            fileIntent.type = "text/csv"
+            fileIntent.putExtra(Intent.EXTRA_SUBJECT, "Data")
+            fileIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            fileIntent.putExtra(Intent.EXTRA_STREAM, path)
+            startActivity(Intent.createChooser(fileIntent, "Send mail"))
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
 
 
+
+    // Alterar na pasta Downloads
     private fun editDocument() {
 
         // ACTION_OPEN_DOCUMENT is the intent to choose a file via the system's
@@ -150,32 +189,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    //Criar novo arquivo na pasta
-    fun saveNewFileOnAppFolder() {
-        val text: String = mEditTextCodBarras?.getText().toString()
-        var fos: FileOutputStream? = null
-        try {
-            fos = openFileOutput(FILE_NAME, Context.MODE_PRIVATE)
-            fos.write(text.toByteArray())
-            mEditTextCodBarras?.getText()?.clear()
-            Toast.makeText(
-                this, "Saved to " + filesDir + "/" + FILE_NAME,
-                Toast.LENGTH_LONG
-            ).show()
-        } catch (e: FileNotFoundException) {
-            e.printStackTrace()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        } finally {
-            if (fos != null) {
-                try {
-                    fos.close()
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
-            }
-        }
-    }
+
 
 
     // Database
@@ -231,6 +245,36 @@ class MainActivity : AppCompatActivity() {
         builder.setTitle("Limpar Banco de Dados")
         builder.setMessage("Tem certeza que deseja limpar o BD?")
         builder.create().show()
+    }
+
+
+
+    //Other Functions
+    //Criar novo arquivo na pasta
+    fun saveNewFileOnAppFolder() {
+        val text: String = mEditTextCodBarras?.getText().toString()
+        var fos: FileOutputStream? = null
+        try {
+            fos = openFileOutput(FILE_NAME, Context.MODE_PRIVATE)
+            fos.write(text.toByteArray())
+            mEditTextCodBarras?.getText()?.clear()
+            Toast.makeText(
+                this, "Saved to " + filesDir + "/" + FILE_NAME,
+                Toast.LENGTH_LONG
+            ).show()
+        } catch (e: FileNotFoundException) {
+            e.printStackTrace()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        } finally {
+            if (fos != null) {
+                try {
+                    fos.close()
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+            }
+        }
     }
 
 }
