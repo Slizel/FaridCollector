@@ -33,11 +33,14 @@ class MainActivity : AppCompatActivity() {
     companion object {
         val FILE_NAME = "Contagem.txt"
 
+
+
         // Request code for creating a PDF document.
         const val CREATE_FILE = 1
 
         // Request code for selecting a PDF document.
         const val PICK_TXT_FILE = 2
+
     }
 
     var mEditTextCodBarras: EditText? = null
@@ -85,7 +88,18 @@ class MainActivity : AppCompatActivity() {
 
         //generate data
         val data = StringBuilder()
-        data.append("Produto ID, Codigo de Barras, Data")
+        data.append(
+
+            Thread {
+
+                AppDatabase.getDatabase(this).contagensDao().readAllInfo().forEach {
+                    it.toString().byteInputStream()
+                }
+
+            }.start()
+
+        )
+
         for (i in 0..4) {
             data.append("""$i,${i * i}""".trimIndent())
         }

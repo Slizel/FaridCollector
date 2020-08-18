@@ -20,6 +20,9 @@ interface ContagensDao {
     @Query("SELECT * FROM contagem_table ORDER BY produtoId ASC")
     fun readAllData(): LiveData<List<Contagens>>
 
+    @Query("SELECT * FROM contagem_table ORDER BY produtoId ASC")
+    fun readAllInfo(): List<Contagens>
+
 
 
 }

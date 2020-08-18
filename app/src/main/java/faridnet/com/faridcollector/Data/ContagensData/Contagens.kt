@@ -26,4 +26,12 @@ data class Contagens(
     val produtoId: Int,
     val quantidade: String,
     val dataHora: String
-)
+
+
+
+
+) {
+    override fun toString(): String {
+        return "Contagens(produtoId=$produtoId, quantidade='$quantidade', dataHora='$dataHora')"
+    }
+}
