@@ -24,5 +24,8 @@ interface ContagensDao {
     fun readAllInfo(): List<Contagens>
 
 
+    @get:Query("SELECT * FROM contagem_table")
+    val allContagens: List<Contagens>
+
 
 }

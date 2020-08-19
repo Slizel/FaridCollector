@@ -25,14 +25,12 @@ import java.util.*
 
 private lateinit var cAppViewModel: AppViewModel
 private lateinit var pAppViewModel: AppViewModel
-private var db: AppDatabase? = null
 
 
 class MainActivity : AppCompatActivity() {
 
     companion object {
         val FILE_NAME = "Contagem.txt"
-
 
 
         // Request code for creating a PDF document.
@@ -86,32 +84,19 @@ class MainActivity : AppCompatActivity() {
 
     fun export() {
 
-        //generate data
-        val data = StringBuilder()
-        data.append(
+        Thread {
 
-            Thread {
+            val db = AppDatabase.getDatabase(this).contagensDao().allContagens
 
-                AppDatabase.getDatabase(this).contagensDao().readAllInfo().forEach {
-                    it.toString().byteInputStream()
-                }
-
-            }.start()
-
-        )
-
-        for (i in 0..4) {
-            data.append("""$i,${i * i}""".trimIndent())
-        }
         try {
             //saving the file into device
-            val out: FileOutputStream = openFileOutput("data.csv", Context.MODE_PRIVATE)
-            out.write(data.toString().toByteArray())
+            val out: FileOutputStream = openFileOutput("data.txt", Context.MODE_PRIVATE)
+            out.write(db.toString().toByteArray())
             out.close()
 
             //exporting
             val context: Context = applicationContext
-            val filelocation = File(filesDir, "data.csv")
+            val filelocation = File(filesDir, "data.txt")
             val path: Uri = FileProvider.getUriForFile(
                 context,
                 "faridnet.com.faridcollector",
@@ -126,8 +111,9 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             e.printStackTrace()
         }
-    }
 
+        }.start()
+    }
 
 
     // Alterar na pasta Downloads
@@ -163,30 +149,29 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-     fun alterDocument(uri: Uri) {
+    fun alterDocument(uri: Uri) {
 
-        try {
-            contentResolver.openFileDescriptor(uri, "w")?.use { it ->
-                FileOutputStream(it.fileDescriptor).use {
+        Thread {
 
-                    it.write(
-                        (       "000000000000000" +
-                                "100151023" +
-                                "ARROZ NEGRO LA PASTIN \n"
+            var db = AppDatabase.getDatabase(this).contagensDao().allContagens
 
-                                //"${System.currentTimeMillis()}\n"
-                                ).toByteArray()
-                    )
 
-                    it.write(
-                        (       "000000000000000" +
-                                "500143226" +
-                                "JG.PANELAS TRAMONT.7P \n"
 
-                                //"${System.currentTimeMillis()}\n"
+            try {
+                contentResolver.openFileDescriptor(uri, "w")?.use { it ->
+                    FileOutputStream(it.fileDescriptor).use {
 
-                                ).toByteArray()
-                    )
+                        it.write(db.toString().toByteArray())
+
+//                    it.write(
+//                        (       "000000000000000" +
+//                                "500143226" +
+//                                "JG.PANELAS TRAMONT.7P \n"
+//
+//                                //"${System.currentTimeMillis()}\n"
+//
+//                                ).toByteArray()
+//                    )
 
 //                    val file = File(uri.path)
 //                    val line: List<String> = file.readLines()
@@ -194,17 +179,16 @@ class MainActivity : AppCompatActivity() {
 //
 //                    }
 
+                    }
                 }
+            } catch (e: FileNotFoundException) {
+                e.printStackTrace()
+            } catch (e: IOException) {
+                e.printStackTrace()
             }
-        } catch (e: FileNotFoundException) {
-            e.printStackTrace()
-        } catch (e: IOException) {
-            e.printStackTrace()
-        }
+        }.start()
+
     }
-
-
-
 
     // Database
     private fun insertDataToDatabase() {
@@ -260,7 +244,6 @@ class MainActivity : AppCompatActivity() {
         builder.setMessage("Tem certeza que deseja limpar o BD?")
         builder.create().show()
     }
-
 
 
     //Other Functions

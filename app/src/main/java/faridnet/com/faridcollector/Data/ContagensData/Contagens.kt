@@ -32,6 +32,6 @@ data class Contagens(
 
 ) {
     override fun toString(): String {
-        return "Contagens(produtoId=$produtoId, quantidade='$quantidade', dataHora='$dataHora')"
+        return "ID=$produtoId Qtd='$quantidade' Data='$dataHora\n"
     }
 }
